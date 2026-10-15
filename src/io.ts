@@ -33,7 +33,7 @@ export async function saveFile(filename: string, data: Blob | string | ArrayBuff
       payload = zipSync({ [filename]: bytes });
       name = filename.replace(/\.[^.]+$/, '') + '.zip';
     }
-    try { await dl.save({ filename: name, data: payload }); return; } catch (e: any) {
+    try { await dl.save({ filename: name, data: payload }); useStore.getState().notify(`Saved ${name}`); return; } catch (e: any) {
       if (e?.code === 'declined') return;
       // fall through to a plain download
     }
@@ -47,6 +47,7 @@ export async function saveFile(filename: string, data: Blob | string | ArrayBuff
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
+  useStore.getState().notify(`Downloaded ${filename}`);
 }
 
 const slug = () => (useStore.getState().name || 'scene').replace(/[^\w-]+/g, '-').toLowerCase();

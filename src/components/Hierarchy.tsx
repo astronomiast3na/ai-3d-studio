@@ -40,6 +40,11 @@ function Item({ o, depth, all }: { o: SceneObj; depth: number; all: SceneObj[] }
         }}
         onClick={(e) => select(o.id, e.shiftKey || e.metaKey || e.ctrlKey)}
         onDoubleClick={() => setEditing(true)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          if (!selected.includes(o.id)) select(o.id);
+          useStore.getState().set({ menu: { x: e.clientX, y: e.clientY } });
+        }}
       >
         <span className="layer-chev" onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{kids.length ? (open ? '▾' : '▸') : ''}</span>
         <span className="layer-icon">{ICONS[o.type] ?? '◆'}</span>

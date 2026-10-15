@@ -119,6 +119,13 @@ const SceneNode = memo(function SceneNode({ obj, childMap }: { obj: SceneObj; ch
         e.stopPropagation();
         select(obj.id, e.nativeEvent.shiftKey);
       }}
+      onContextMenu={(e) => {
+        if (!edit || obj.locked) return;
+        e.stopPropagation();
+        e.nativeEvent.preventDefault();
+        if (!useStore.getState().selected.includes(obj.id)) select(obj.id);
+        useStore.getState().set({ menu: { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY } });
+      }}
       onPointerDown={(e) => { if (!edit) { e.stopPropagation(); runtime.handle('mouseDown', obj.id); } }}
       onPointerOver={(e) => { if (!edit) { e.stopPropagation(); runtime.handle('mouseHover', obj.id, true); document.body.style.cursor = obj.events.length ? 'pointer' : ''; } }}
       onPointerOut={(e) => { if (!edit) { e.stopPropagation(); runtime.handle('mouseHover', obj.id, false); document.body.style.cursor = ''; } }}

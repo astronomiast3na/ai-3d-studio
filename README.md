@@ -4,6 +4,17 @@ A Spline-style 3D design editor that runs in the browser, with AI generation bui
 
 Live build: https://claude.ai/artifact/9bduaQdxE5w9zzfEDLcCJW
 
+## Mesh generation keys
+
+| Model | Input | Approx. cost | Notes |
+| --- | --- | --- | --- |
+| Hunyuan3D 3.1 Pro (fal.ai) | Text or image | ~$0.38 per model | Best all-round detail, PBR textures, up to 1.5M faces |
+| Rodin by Hyper3D (fal.ai) | Text or image | ~$0.40, High detail 3x | Sculpt-level geometry; High detail adds 4K textures |
+| TRELLIS.2 (fal.ai) | Image | lowest | Open model, 4K PBR |
+| Meshy 6 | Text or image | Meshy credits | Uses your Meshy key |
+
+Get a fal.ai key at https://fal.ai/dashboard/keys and paste it in AI Generate → API keys. Keys stay in your browser. Mesh generation works in the hosted app (GitHub Pages or `npm run dev`); the Claude preview blocks calls to outside services.
+
 ## Run it
 
 ```bash
@@ -23,7 +34,7 @@ npm run build    # static build in dist/
 | Lighting & scene | Directional, point and spot lights with soft shadows; studio environment; ambient light; fog; background or transparent; perspective or orthographic camera |
 | Post-processing | Bloom, depth of field, vignette, noise, chromatic aberration, tone mapping |
 | Interactions | States plus events: Start, Mouse Down, Mouse Hover, Key Down, Scroll, Mouse Move (look at / follow cursor); toggle, once, loop and ping-pong; six easings including spring and bounce; Play mode |
-| AI | Design with Claude: describe or upload a reference image and it builds or edits editable objects, materials and interactions. Text or image to textured mesh through Meshy (bring your own key) |
+| AI | Design with Claude: describe or upload a reference image and it builds or edits editable objects, materials and interactions, then reviews a render of its result and refines it. Text or image to production-quality textured mesh with Hunyuan3D 3.1 Pro (recommended), Rodin by Hyper3D or TRELLIS.2 through one fal.ai key, or Meshy 6 with a Meshy key |
 | Import | .glb, .gltf, .obj, .stl, .ply, images, project files; drag and drop |
 | Export | Self-contained web page with interactions (the equivalent of Spline's public URL / viewer), React and vanilla JS code, iframe embed, GLB, GLTF, USDZ, OBJ, STL, PLY, PNG, JPG, WEBP, WebM video, project .json |
 | Workflow | Undo / redo, duplicate, group / ungroup, multi-select, keyboard shortcuts, autosave in the browser |

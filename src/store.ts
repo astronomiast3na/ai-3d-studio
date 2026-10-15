@@ -21,6 +21,9 @@ interface State {
   future: Snapshot[];
   lastKey: string | null;
   lastTime: number;
+  toast: string | null;
+  menu: { x: number; y: number } | null;
+  notify: (msg: string) => void;
 
   set: (p: Partial<State>) => void;
   commit: (key?: string) => void;
@@ -79,6 +82,13 @@ export const useStore = create<State>((set, get) => ({
   future: [],
   lastKey: null,
   lastTime: 0,
+  toast: null,
+  menu: null,
+  notify: (msg) => {
+    set({ toast: msg });
+    clearTimeout((globalThis as any).__toastT);
+    (globalThis as any).__toastT = setTimeout(() => set({ toast: null }), 2600);
+  },
 
   set: (p) => set(p as any),
 
@@ -111,6 +121,14 @@ export const useStore = create<State>((set, get) => ({
     get().commit();
     const s = get();
     const o = makeObject(type, extra);
+    // Like Spline, drop new shapes near the centre, but step aside from anything already there.
+    if (!extra.position && !type.endsWith('Light') && type !== 'plane') {
+      const taken = (x: number, z: number) => s.objects.some((q) => !q.parentId && !q.type.endsWith('Light') && q.type !== 'plane' && Math.hypot(q.position[0] - x, q.position[2] - z) < 1.4);
+      const spots: [number, number][] = [[0, 0]];
+      for (let r = 1; r <= 4; r++) for (let i = 0; i < 8 * r; i++) { const a = (i / (8 * r)) * Math.PI * 2; spots.push([Math.round(Math.cos(a) * r * 1.5 * 10) / 10, Math.round(Math.sin(a) * r * 1.5 * 10) / 10]); }
+      const [x, z] = spots.find(([x, z]) => !taken(x, z)) ?? [0, 0];
+      o.position = [x, o.position[1], z];
+    }
     // New objects go into the selected group, like Spline.
     const sel = s.objects.find((x) => x.id === s.selected[0]);
     if (extra.parentId === undefined && sel?.type === 'group') o.parentId = sel.id;

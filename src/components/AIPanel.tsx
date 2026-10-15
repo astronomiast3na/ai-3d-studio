@@ -13,6 +13,14 @@ const EXAMPLES = [
   'A coffee cup on a saucer with steam',
 ];
 
+const MESH_EXAMPLES = [
+  'A weathered fantasy treasure chest with gold trim',
+  'A modern lounge chair in walnut and cream leather',
+  'A cute low-poly fox character, standing',
+  'A sci-fi helmet with glowing visor',
+  'A ceramic coffee mug with a speckled glaze',
+];
+
 const store = {
   get: (k: string) => { try { return localStorage.getItem(k) ?? ''; } catch { return ''; } },
   set: (k: string, v: string) => { try { localStorage.setItem(k, v); } catch {} },
@@ -132,7 +140,7 @@ export function AIPanel() {
           <textarea className="text big" placeholder={mode === 'scene' ? 'Describe what to create or change…' : 'e.g. a stylized treasure chest with gold trim'} value={prompt}
             onChange={(e) => setPrompt(e.target.value)} onKeyDown={(e) => { e.stopPropagation(); if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) run(); }} />
           <div className="chips">
-            {EXAMPLES.map((x) => <button key={x} className="chip" onClick={() => setPrompt(x)}>{x}</button>)}
+            {(mode === 'scene' ? EXAMPLES : MESH_EXAMPLES).map((x) => <button key={x} className="chip" onClick={() => setPrompt(x)}>{x}</button>)}
           </div>
           <div className="inline" style={{ marginTop: 8 }}>
             <label className="btn sm">

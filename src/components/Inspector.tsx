@@ -159,7 +159,14 @@ function DesignTab({ o }: { o: SceneObj }) {
           </Row>
         )}
       </Section>
-      {isLight ? <LightPanel o={o} /> : o.type === 'group' ? null : (
+      {isLight ? <LightPanel o={o} /> : o.type === 'group' ? (
+        <Section title="Group">
+          <div className="inline">
+            <button className="btn sm" onClick={() => useStore.getState().ungroup(o.id)}>Ungroup</button>
+            <button className="btn sm" onClick={() => useStore.getState().set({ panel: 'ai' })}>✦ Edit with AI</button>
+          </div>
+        </Section>
+      ) : (
         <>
           <ShapeParams o={o} />
           <MaterialPanel o={o} />

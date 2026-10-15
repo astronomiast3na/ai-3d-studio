@@ -6,6 +6,7 @@ import { Hierarchy } from './components/Hierarchy';
 import { Inspector } from './components/Inspector';
 import { ExportPanel } from './components/ExportPanel';
 import { AIPanel } from './components/AIPanel';
+import { ContextMenu } from './components/ContextMenu';
 import { runtime, registry } from './runtime';
 import { importFiles } from './io';
 import * as THREE from 'three';
@@ -35,6 +36,7 @@ function focusSelection() {
 export default function App() {
   const panel = useStore((s) => s.panel);
   const mode = useStore((s) => s.mode);
+  const toast = useStore((s) => s.toast);
   const [dragging, setDragging] = useState(false);
 
   // Start / stop the interaction runtime with Play mode.
@@ -90,13 +92,15 @@ export default function App() {
       <Toolbar />
       <div className="main">
         {mode === 'edit' && <Hierarchy />}
-        <div className="viewport">
+        <div className="viewport" onContextMenu={(e) => e.preventDefault()}>
           <Viewport />
           {mode === 'play' && <div className="play-badge">Play mode · interact with the scene · Esc to stop</div>}
           {dragging && <div className="drop-overlay">Drop .glb, .gltf, .obj, .stl, .ply, images or a project file</div>}
         </div>
         {mode === 'edit' && <Inspector />}
       </div>
+      <ContextMenu />
+      {toast && <div className="toast" role="status">{toast}</div>}
       {panel === 'export' && <ExportPanel />}
       {panel === 'ai' && <AIPanel />}
       {panel === 'shortcuts' && (
