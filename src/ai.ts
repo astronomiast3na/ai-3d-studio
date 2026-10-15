@@ -200,3 +200,70 @@ export async function meshyGenerate(opts: { apiKey: string; prompt?: string; ima
   opts.onStatus('Downloading model…');
   return await (await fetch(url, { signal: opts.signal })).blob();
 }
+
+// ---------- Mesh generation via fal.ai (one key, several top models) ----------
+
+export interface MeshProvider {
+  id: string;
+  label: string;
+  note: string;
+  text: boolean;
+  image: boolean;
+  endpoint: (mode: 'text' | 'image') => string;
+  body: (o: { prompt: string; image?: string; hq: boolean }) => any;
+  pick: (r: any) => string | undefined;
+}
+
+export const MESH_PROVIDERS: MeshProvider[] = [
+  {
+    id: 'hunyuan', label: 'Hunyuan3D 3.1 Pro', note: 'Best all-round detail and PBR textures. About $0.38 per model on fal.ai.', text: true, image: true,
+    endpoint: (m) => `fal-ai/hunyuan-3d/v3.1/pro/${m === 'image' ? 'image-to-3d' : 'text-to-3d'}`,
+    body: ({ prompt, image, hq }) => ({
+      ...(image ? { input_image_url: image } : { prompt: prompt.slice(0, 1000) }), generate_type: 'Normal', enable_pbr: true, face_count: hq ? 1_000_000 : 500_000,
+    }),
+    pick: (r) => r?.model_glb?.url ?? r?.model_urls?.glb?.url,
+  },
+  {
+    id: 'rodin', label: 'Rodin (Hyper3D)', note: 'Sculpt-level geometry, clean topology. About $0.40 per model; High detail (4K, high-poly) costs 3x.', text: true, image: true,
+    endpoint: () => 'fal-ai/hyper3d/rodin',
+    body: ({ prompt, image, hq }) => ({
+      ...(image ? { input_image_urls: [image] } : {}), ...(prompt ? { prompt } : {}), geometry_file_format: 'glb', material: 'PBR',
+      quality: hq ? 'high' : 'medium', tier: 'Regular', ...(hq ? { generation_adds_on: ['HighPack'] } : {}),
+    }),
+    pick: (r) => r?.model_mesh?.url,
+  },
+  {
+    id: 'trellis2', label: 'TRELLIS.2 (Microsoft)', note: 'Open model with 4K PBR textures. Image input only, lowest cost.', text: false, image: true,
+    endpoint: () => 'fal-ai/trellis-2',
+    body: ({ image }) => ({ image_url: image }),
+    pick: (r) => r?.model_glb?.url ?? r?.model_mesh?.url ?? r?.glb?.url,
+  },
+];
+
+export async function falGenerate(opts: { apiKey: string; provider: MeshProvider; prompt: string; image?: Blob | null; hq: boolean; onStatus: (s: string) => void; signal?: AbortSignal }): Promise<Blob> {
+  const { provider: p } = opts;
+  const mode = opts.image ? 'image' : 'text';
+  if (mode === 'text' && !p.text) throw new Error(`${p.label} needs a reference image.`);
+  const image = opts.image ? 'data:' + (opts.image.type || 'image/png') + ';base64,' + (await blobToBase64(opts.image)) : undefined;
+  const H = { Authorization: `Key ${opts.apiKey}`, 'Content-Type': 'application/json' };
+  opts.onStatus(`Sending to ${p.label}…`);
+  const sub = await fetch(`https://queue.fal.run/${p.endpoint(mode)}`, { method: 'POST', headers: H, body: JSON.stringify(p.body({ prompt: opts.prompt, image, hq: opts.hq })), signal: opts.signal });
+  if (!sub.ok) throw new Error(`fal.ai ${sub.status}: ${(await sub.text()).slice(0, 300)}`);
+  const job = await sub.json();
+  const t0 = Date.now();
+  for (;;) {
+    await new Promise((r) => setTimeout(r, 3000));
+    if (opts.signal?.aborted) throw Object.assign(new Error('Cancelled'), { name: 'AbortError' });
+    const st = await (await fetch(job.status_url, { headers: H, signal: opts.signal })).json();
+    const secs = Math.round((Date.now() - t0) / 1000);
+    opts.onStatus(st.status === 'IN_QUEUE' ? `Queued (position ${st.queue_position ?? '…'}) · ${secs}s` : `Generating with ${p.label} · ${secs}s`);
+    if (st.status === 'COMPLETED') break;
+    if (st.status === 'FAILED' || st.error) throw new Error(st.error || 'Generation failed');
+    if (Date.now() - t0 > 15 * 60_000) throw new Error('Timed out after 15 minutes');
+  }
+  const res = await (await fetch(job.response_url, { headers: H, signal: opts.signal })).json();
+  const url = p.pick(res);
+  if (!url) throw new Error('The result had no GLB file: ' + JSON.stringify(res).slice(0, 200));
+  opts.onStatus('Downloading model…');
+  return await (await fetch(url, { signal: opts.signal })).blob();
+}
